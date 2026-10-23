@@ -1,0 +1,67 @@
+# Backend build output
+
+backend/target/
+
+# Local application data and databases
+
+backend/data/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+
+# Environment variables and secrets
+
+.env
+.env.*
+!.env.example
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
+**/*secret*
+**/*credentials*
+
+# Frontend dependencies and build output
+
+frontend/node_modules/
+frontend/dist/
+
+# Local backups
+
+.module3-backup/
+src-backup-before-task2-ui-20261022/
+
+# IDE files
+
+.idea/
+*.iml
+.vscode/
+
+# Operating system files
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+
+*.log
+
+# Temporary files
+
+*.tmp
+*.bak
+*.swp
+*~
+
+# Java
+
+*.class
+
+# Node.js
+
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*

@@ -1,0 +1,94 @@
+/* Sync page (Module 3). Uses only the existing design tokens. */
+
+.sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sync-button {
+  background: var(--color-accent);
+  color: #0f1113;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sync-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.sync-button:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.sync-button:disabled {
+  background: transparent;
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.sync-note {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.sync-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.sync-count {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+.sync-count-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-count-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.sync-callout {
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-text-muted);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-panel);
+  overflow-wrap: anywhere;
+}
+
+.sync-callout--error {
+  border-left-color: var(--color-critical);
+}
+
+.sync-callout--warning {
+  border-left-color: var(--color-warning);
+}
+
+.sync-callout h4 {
+  margin: 0 0 var(--space-1);
+  font-size: 13px;
+}
+
+.sync-callout p {
+  margin: 0;
+}
+
+.sync-callout p + p {
+  margin-top: var(--space-2);
+}

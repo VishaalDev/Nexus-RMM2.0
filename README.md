@@ -165,3 +165,5 @@ No-destination try-out: `node tools\sync-test-receiver.mjs` (development aid onl
   — `mvn clean package`
   — is the next step, on your machine.
 "# Nexus-RMM2.0" 
+#   N e x u s - R M M 2 . 0  
+ 

@@ -1,0 +1,135 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: nexus-rmm-backend
+
+  datasource:
+    # Relative path -> resolves under the backend's working directory (./data/).
+    # Never hardcode an absolute machine-specific path here.
+    url: jdbc:sqlite:${nexus.database.path:./data/nexus-rmm.db}
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      # Vertical-slice phase only: auto-creates/updates the schema from entities.
+      # This will be replaced by a tracked, versioned migration process
+      # (see docs/database.md) once the full schema in Phase 3+ lands.
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  jackson:
+    default-property-inclusion: non_null
+
+# Nexus-RMM specific configuration. Every tunable referenced by the
+# collection/analysis/alert/sync engines must live here, not as a
+# scattered magic number in code.
+nexus:
+  database:
+    path: ./data/nexus-rmm.db
+  collection:
+    interval-seconds: 10
+  history:
+    default-window: PT1H   # ISO-8601 duration: 1 hour
+    max-points: 5000       # hard ceiling per history query, regardless of window size
+    current-value-lookback-multiplier: 3
+  hardware:
+    pawnio:
+      # Optional path to a compiled PawnIO MSR module (e.g. IntelMSR.bin).
+      # Unset by default — see docs/hardware-monitoring.md for why CPU
+      # temperature falls back to "unavailable" with a diagnostic instead
+      # of a fabricated reading when this isn't configured.
+      module-path:
+  events:
+    enabled: true
+    poll-interval-seconds: 60
+    lookback-hours: 2
+
+  # Module 2 (health analysis & failure risk). Every threshold, window and
+  # weight the analyzers use lives here; nothing is hardcoded in the engine.
+  # Invalid combinations (e.g. warn >= critical) fail fast at startup.
+  health:
+    cache-ttl-seconds: 10          # analysis is recomputed at most this often
+    min-samples: 12                # valid samples needed in the short window to score a series
+    windows:
+      short-window: PT1H           # "current condition" window
+      long-window: P7D             # trend / baseline window
+      bucket: PT30M                # aggregation bucket for the long window
+      event-window: P7D            # hardware-event lookback for reliability
+      max-raw-samples: 20000       # hard cap on raw rows read per series
+      max-events: 1000
+    trend:                         # a trend is reported only when ALL four hold
+      min-buckets: 24
+      min-span: PT24H
+      min-r-squared: 0.5
+      min-density: 0.25            # share of bucket slots in the span that hold data (rejects sparse sessions)
+    anomaly:
+      z-threshold: 3.5             # robust z-score (median/MAD)
+      min-baseline-buckets: 48     # buckets of history needed before any anomaly claim
+    thresholds:
+      cpu-warn: 75
+      cpu-critical: 90
+      memory-warn: 80
+      memory-critical: 92
+      storage-warn: 85
+      storage-critical: 95
+      temperature-warn: 80
+      temperature-critical: 90
+      battery-low: 20
+      battery-critical: 10
+    scoring:
+      healthy-min: 85
+      fair-min: 65
+      degraded-min: 40
+      worst-component-margin: 30   # overall <= lowest component score + this
+    weights:                       # share of each component in the overall health score
+      cpu: 1.0
+      memory: 1.0
+      storage-capacity: 1.5
+      storage-io: 0.5
+      thermal: 1.5
+      battery: 0.75
+      network: 0.5
+      reliability: 2.0
+    risk:
+      low-max: 20
+      moderate-max: 45
+      high-max: 70
+      storage-horizon-warn-days: 30
+      storage-horizon-critical-days: 7
+      weights:                     # per-component weight in the overall risk index (max 1.0)
+        reliability: 1.0
+        storage-capacity: 0.9
+        thermal: 0.8
+        memory: 0.5
+        cpu: 0.4
+        battery: 0.4
+
+  # Module 3 (offline-first synchronization). Everything is optional: with no
+  # destination-url the app runs in local-only mode and the Sync page reports
+  # NOT_CONFIGURED. Prefer environment variables for deployment-specific values:
+  #   NEXUS_SYNC_DESTINATION_URL, NEXUS_SYNC_AUTH_TOKEN
+  # Never put credentials in this file. Full contract: docs/sync.md
+  sync:
+    destination-url:                # e.g. https://receiver.example.org/api/ingest  (blank = NOT_CONFIGURED)
+    auth-token:                     # optional bearer token; use NEXUS_SYNC_AUTH_TOKEN instead of writing it here
+    batch-size: 200                 # records per request (1-1000)
+    connect-timeout: PT5S           # ISO-8601 durations
+    request-timeout: PT30S
+    backoff-initial: PT5S           # first retry delay after a failure
+    backoff-max: PT5M               # retry delay never exceeds this
+    backoff-multiplier: 2.0
+    max-batches-per-cycle: 50       # bounds work per attempt; the rest continues on the next tick
+    enqueue-chunk-size: 5000        # rows copied into the queue per short write transaction
+    poll-interval-seconds: 10       # how often an automatic attempt is considered
+    backfill-existing-data: true    # also synchronize telemetry stored before Module 3 existed
+
+logging:
+  level:
+    root: INFO
+    com.nexusrmm: INFO
