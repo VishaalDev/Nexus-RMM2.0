@@ -1,6 +1,7 @@
 import { useState } from "react";
 import DataBoundary from "../components/DataBoundary";
 import DataTable from "../components/DataTable";
+import PageHeader from "../components/PageHeader";
 import Panel from "../components/Panel";
 import SpecTable from "../components/SpecTable";
 import StatusBadge from "../components/StatusBadge";
@@ -31,11 +32,12 @@ function Callout({ title, tone, children }) {
   );
 }
 
-function CountTile({ label, value }) {
+function CountTile({ label, hint, value, tone }) {
   return (
-    <div className="sync-count">
+    <div className={`sync-count${tone ? ` sync-count--${tone}` : ""}`}>
       <div className="sync-count-value">{value.toLocaleString()}</div>
       <div className="sync-count-label">{label}</div>
+      <div className="sync-count-hint">{hint}</div>
     </div>
   );
 }
@@ -68,7 +70,7 @@ function SyncNowPanel({ status, refetch }) {
   return (
     <Panel title="Synchronization" actions={<StatusBadge status={status.state} />}>
       <div className="sync-actions">
-        <button type="button" className="sync-button" disabled={disabled} aria-busy={busy} onClick={handleSyncNow}>
+        <button type="button" className="btn btn--primary" disabled={disabled} aria-busy={busy} onClick={handleSyncNow}>
           {busy ? "Syncing\u2026" : "Sync Now"}
         </button>
         {!configured && (
@@ -95,13 +97,10 @@ export default function Sync() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h2>Sync</h2>
-        <p>
-          Offline-first synchronization. Data is stored locally first; it only counts as synchronized once the
-          destination has acknowledged it.
-        </p>
-      </header>
+      <PageHeader
+        title="Sync"
+        subtitle="Data is stored locally first and counts as synchronized only once the destination has acknowledged it."
+      />
 
       <DataBoundary state={syncStatus} what="synchronization status">
         {(status) => {
@@ -129,11 +128,16 @@ export default function Sync() {
                 </Callout>
               )}
 
-              <Panel title="Queue">
+              <Panel title="Queue" flush>
                 <div className="sync-counts">
-                  <CountTile label="Pending (stored locally, not yet acknowledged)" value={status.queue.pending} />
-                  <CountTile label="Synchronized (acknowledged by destination)" value={status.queue.synced} />
-                  <CountTile label="Failed (permanently rejected by destination)" value={status.queue.failed} />
+                  <CountTile label="Pending" hint="Stored locally, not yet acknowledged" value={status.queue.pending} />
+                  <CountTile label="Synchronized" hint="Acknowledged by destination" value={status.queue.synced} />
+                  <CountTile
+                    label="Failed"
+                    hint="Permanently rejected by destination"
+                    value={status.queue.failed}
+                    tone={status.queue.failed > 0 ? "critical" : undefined}
+                  />
                 </div>
                 <DataTable
                   caption="Queue by data type"
@@ -145,8 +149,9 @@ export default function Sync() {
                 />
               </Panel>
 
+              <div className="grid-2">
               <Panel title="Destination connectivity" actions={<StatusBadge status={status.connectivity} />}>
-                <p className="sync-note">
+                <p className="sync-note sync-note--block">
                   Based on the last real delivery attempt, not a live probe. Unreachable means no HTTP answer was
                   received; a destination that answers with an error is reachable but failing.
                 </p>
@@ -192,6 +197,7 @@ export default function Sync() {
                   </p>
                 )}
               </Panel>
+              </div>
             </>
           );
         }}

@@ -17,7 +17,7 @@ const STATUS = {
   UP: { color: OK, label: "Up" },
   DOWN: { color: NEUTRAL, label: "Down" },
   // Utilization level (presentation only, see utils/metrics.js)
-  HIGH: { color: BAD, label: "High utilization" },
+  HIGH: { color: BAD, label: "High" },
   ELEVATED: { color: WARN, label: "Elevated" },
   NORMAL: { color: OK, label: "Normal" },
   // Synchronization (Module 3)

@@ -1,17 +1,19 @@
 import { useMemo, useState } from "react";
 import MetricHistoryChart from "../components/MetricHistoryChart";
+import PageHeader from "../components/PageHeader";
 import Panel from "../components/Panel";
+import Segmented from "../components/Segmented";
 import SelectField from "../components/SelectField";
 import { LoadingState } from "../components/States";
 import { useCurrentMetrics } from "../hooks/useApiData";
 import { LIVE_TABLE_METRICS, METRIC_LABELS, readingsOfType } from "../utils/metrics";
 
 const WINDOW_OPTIONS = [
-  { value: "1h", label: "Last 1 hour" },
-  { value: "6h", label: "Last 6 hours" },
-  { value: "24h", label: "Last 24 hours" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
+  { value: "1h", label: "1 h" },
+  { value: "6h", label: "6 h" },
+  { value: "24h", label: "24 h" },
+  { value: "7d", label: "7 d" },
+  { value: "30d", label: "30 d" },
 ];
 
 const METRIC_OPTIONS = LIVE_TABLE_METRICS.map((type) => ({ value: type, label: METRIC_LABELS[type] }));
@@ -38,13 +40,13 @@ export default function History() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h2>History</h2>
-        <p>Stored telemetry for any metric this backend collects.</p>
-      </header>
+      <PageHeader title="History" subtitle="Stored telemetry for any metric this backend collects." />
 
-      <Panel title="Chart">
-        <div className="controls" style={{ marginBottom: "var(--space-4)" }}>
+      <Panel
+        title={METRIC_LABELS[metric]}
+        actions={<Segmented label="Time range" value={range} options={WINDOW_OPTIONS} onChange={setRange} />}
+      >
+        <div className="toolbar history-toolbar">
           <SelectField
             label="Metric"
             value={metric}
@@ -58,15 +60,9 @@ export default function History() {
             <LoadingState>Loading instances&hellip;</LoadingState>
           ) : (
             isMultiInstance && (
-              <SelectField
-                label="Instance"
-                value={effectiveInstance ?? ""}
-                options={instanceOptions}
-                onChange={setInstance}
-              />
+              <SelectField label="Instance" value={effectiveInstance ?? ""} options={instanceOptions} onChange={setInstance} />
             )
           )}
-          <SelectField label="Range" value={range} options={WINDOW_OPTIONS} onChange={setRange} />
         </div>
 
         <MetricHistoryChart
@@ -74,6 +70,7 @@ export default function History() {
           metric={metric}
           instance={effectiveInstance}
           range={range}
+          tall
         />
       </Panel>
     </div>

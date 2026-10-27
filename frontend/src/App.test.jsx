@@ -15,10 +15,17 @@ vi.mock("./api/services/metricsService", () => ({
 }));
 vi.mock("./api/services/diagnosticsService", () => ({ getDiagnostics: vi.fn() }));
 vi.mock("./api/services/eventsService", () => ({ getEvents: vi.fn() }));
+vi.mock("./api/services/advisorService", () => ({
+  getAdvisorReport: vi.fn(),
+  getAlerts: vi.fn(),
+  getProcesses: vi.fn(),
+}));
 
 import { getBackendHealth, getDevice } from "./api/services/deviceService";
 import { getHardwareSnapshot } from "./api/services/hardwareService";
 import { getCurrentMetrics, getMetricHistory } from "./api/services/metricsService";
+import { getAdvisorReport } from "./api/services/advisorService";
+import { ADVISOR_REPORT } from "./test-fixtures-advisor";
 
 describe("App", () => {
   beforeEach(() => {
@@ -59,5 +66,33 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Overview" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Storage" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sync" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Processes" })).toBeInTheDocument();
+  });
+
+  it("badges the Advisor entry with the number of issues needing attention", async () => {
+    getBackendHealth.mockResolvedValue({ status: "UP" });
+    getDevice.mockResolvedValue({ computerId: "abc-123", hostname: "TEST-HOST" });
+    getHardwareSnapshot.mockResolvedValue({ system: {} });
+    getCurrentMetrics.mockResolvedValue([]);
+    getMetricHistory.mockResolvedValue([]);
+    getAdvisorReport.mockResolvedValue(ADVISOR_REPORT);
+
+    render(<App />);
+
+    const advisor = await screen.findByRole("button", { name: /Advisor.*2 need attention/ });
+    expect(advisor).toBeInTheDocument();
+  });
+
+  it("still works when the advisor endpoint fails (no badge, no crash)", async () => {
+    getBackendHealth.mockResolvedValue({ status: "UP" });
+    getDevice.mockResolvedValue({ computerId: "abc-123", hostname: "TEST-HOST" });
+    getHardwareSnapshot.mockResolvedValue({ system: {} });
+    getCurrentMetrics.mockResolvedValue([]);
+    getMetricHistory.mockResolvedValue([]);
+    getAdvisorReport.mockRejectedValue(new Error("down"));
+
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Advisor" })).toBeInTheDocument());
   });
 });

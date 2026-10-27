@@ -1,9 +1,10 @@
 import DataBoundary from "../components/DataBoundary";
 import HealthBadge from "../components/HealthBadge";
+import PageHeader from "../components/PageHeader";
 import Panel from "../components/Panel";
 import ScoreMeter from "../components/ScoreMeter";
 import { useRiskReport } from "../hooks/useHealthData";
-import { formatDateTime } from "../utils/format";
+import { formatTime } from "../utils/format";
 import {
   CONFIDENCE_EXPLANATION,
   CONFIDENCE_META,
@@ -21,7 +22,7 @@ function ConfidenceChip({ confidence }) {
   return (
     <span className="hl-chip">
       <span className="badge-dot" aria-hidden="true" style={{ background: meta?.color ?? "var(--color-text-muted)" }} />
-      Evidence confidence: <strong>{confidenceLabel(confidence)}</strong>
+      Evidence confidence <strong>{confidenceLabel(confidence)}</strong>
     </span>
   );
 }
@@ -104,14 +105,16 @@ export default function Risk() {
   const report = useRiskReport();
   return (
     <div className="page">
-      <header className="page-header">
-        <h2>Failure risk</h2>
-        <p>
-          A rule-based severity index for conditions that tend to precede problems. It is{" "}
-          <strong>not a probability of failure</strong> and has not been calibrated against real
-          failures.
-        </p>
-      </header>
+      <PageHeader
+        title="Failure risk"
+        subtitle={
+          <>
+            A rule-based severity index for conditions that tend to precede problems. It is{" "}
+            <strong>not a probability of failure</strong> and has not been calibrated against real failures.
+          </>
+        }
+        meta={report.data ? <span>Updated {formatTime(report.data.generatedAt)} &middot; every 30 s</span> : null}
+      />
 
       <DataBoundary state={report} what="risk analysis">
         {(data) => {
@@ -119,10 +122,11 @@ export default function Risk() {
           const overallConfidence = CONFIDENCE_META[data.confidence];
           return (
             <>
-              <Panel title="Overall risk" actions="Refreshes every 30 seconds">
+              <Panel title="Overall risk">
                 <div className="hl-overall">
                   <div className="hl-overall-score">
                     <ScoreMeter
+                      size="lg"
                       score={data.overallRiskScore}
                       label="Overall risk index"
                       color={overall.kind === "assessed" ? overall.color : "var(--color-text-muted)"}
@@ -143,21 +147,26 @@ export default function Risk() {
 
                 {data.confidence === "LOW" && (
                   <p className="hl-caution" role="note">
-                    Low evidence confidence: this overall score rests on limited history. A High or Critical
-                    reading still points to a condition that was actually observed; a Low or zero reading
-                    says only that nothing has been detected yet.
+                    Low evidence confidence: this overall score rests on limited history. A High or Critical reading
+                    still points to a condition that was actually observed; a Low or zero reading says only that
+                    nothing has been detected yet.
                   </p>
                 )}
-                <p className="muted">{data.methodology}</p>
-                <p className="muted">Generated {formatDateTime(data.generatedAt)}</p>
+                <details className="disclosure hl-method">
+                  <summary>Methodology</summary>
+                  <p className="muted">{data.methodology}</p>
+                </details>
               </Panel>
 
-              <p className="hl-callout" role="note">
-                <strong>Not assessed</strong> or <strong>limited-evidence</strong> results cannot establish that
-                the system is safe. They mean the backend lacked, or had too little, evidence to say either way.
-                Only a <strong>Low risk</strong> result with Medium or High evidence confidence is a genuine
-                &ldquo;nothing found&rdquo;.
-              </p>
+              <details className="disclosure hl-callout-details">
+                <summary>Why &ldquo;not assessed&rdquo; is not &ldquo;safe&rdquo;</summary>
+                <p className="hl-callout" role="note">
+                  <strong>Not assessed</strong> or <strong>limited-evidence</strong> results cannot establish that the
+                  system is safe. They mean the backend lacked, or had too little, evidence to say either way. Only a{" "}
+                  <strong>Low risk</strong> result with Medium or High evidence confidence is a genuine &ldquo;nothing
+                  found&rdquo;.
+                </p>
+              </details>
 
               <div className="hl-grid">
                 {data.components.map((c) => (
@@ -165,34 +174,37 @@ export default function Risk() {
                 ))}
               </div>
 
-              <Panel title="How to read these numbers">
-                <dl className="hl-glossary">
-                  <dt>Risk index (0&ndash;100)</dt>
-                  <dd>
-                    A heuristic severity index. Each component&rsquo;s factors combine as 1 &minus; &prod;(1 &minus;
-                    severity), and components combine the same way after weighting. It is not a probability.
-                  </dd>
-                  <dt>Factor severity (0&ndash;100)</dt>
-                  <dd>
-                    How strongly one rule fired, from the backend&rsquo;s own scale. It is not a probability and
-                    not a percentage of samples. Percentages that appear in a factor&rsquo;s description or in its
-                    evidence list (for example &ldquo;share of samples above the warning temperature&rdquo;) are
-                    measured facts about the data, separate from the severity.
-                  </dd>
-                  <dt>Evidence confidence</dt>
-                  <dd>
-                    How much history supports the result, not how risky the machine is. The backend rates it High
-                    with at least 7 days of history and 60% data coverage, Medium with at least 24 hours and 30%,
-                    and Low otherwise. History that is sparse (under 25% of its time span populated) is always Low.
-                  </dd>
-                  <dt>Low risk vs. limited evidence vs. not assessed</dt>
-                  <dd>
-                    <em>Low risk</em>: rules ran, none fired, and confidence is Medium or High.{" "}
-                    <em>No indicators &middot; limited evidence</em>: rules ran and none fired, but confidence is
-                    Low. <em>Not assessed</em>: there was no usable evidence, or the component yields no failure
-                    indicators by design.
-                  </dd>
-                </dl>
+              <Panel title="Reference">
+                <details className="disclosure">
+                  <summary>How to read these numbers</summary>
+                  <dl className="hl-glossary">
+                    <dt>Risk index (0&ndash;100)</dt>
+                    <dd>
+                      A heuristic severity index. Each component&rsquo;s factors combine as 1 &minus; &prod;(1 &minus;
+                      severity), and components combine the same way after weighting. It is not a probability.
+                    </dd>
+                    <dt>Factor severity (0&ndash;100)</dt>
+                    <dd>
+                      How strongly one rule fired, from the backend&rsquo;s own scale. It is not a probability and not a
+                      percentage of samples. Percentages that appear in a factor&rsquo;s description or in its evidence
+                      list (for example &ldquo;share of samples above the warning temperature&rdquo;) are measured facts
+                      about the data, separate from the severity.
+                    </dd>
+                    <dt>Evidence confidence</dt>
+                    <dd>
+                      How much history supports the result, not how risky the machine is. The backend rates it High with
+                      at least 7 days of history and 60% data coverage, Medium with at least 24 hours and 30%, and Low
+                      otherwise. History that is sparse (under 25% of its time span populated) is always Low.
+                    </dd>
+                    <dt>Low risk vs. limited evidence vs. not assessed</dt>
+                    <dd>
+                      <em>Low risk</em>: rules ran, none fired, and confidence is Medium or High.{" "}
+                      <em>No indicators &middot; limited evidence</em>: rules ran and none fired, but confidence is Low.{" "}
+                      <em>Not assessed</em>: there was no usable evidence, or the component yields no failure indicators
+                      by design.
+                    </dd>
+                  </dl>
+                </details>
               </Panel>
             </>
           );

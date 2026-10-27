@@ -14,12 +14,17 @@ import { formatRate } from "../utils/format";
 /** A trend needs at least two real readings; fewer is "insufficient data", not a flat line. */
 const MIN_REAL_POINTS = 2;
 const DAY_MS = 86_400_000;
-const CHART_HEIGHT = 220;
 /**
  * Room for the last x-axis label, which is centred on the final point and
  * would otherwise be cut off at the container's right edge.
  */
-const CHART_MARGIN = { top: 8, right: 32, bottom: 0, left: 0 };
+const CHART_MARGIN = { top: 8, right: 28, bottom: 0, left: 0 };
+
+/** Axis ticks are whole numbers so "100%" fits; tooltips keep one decimal. */
+function formatTick(value, unit) {
+  if (unit === "%" || unit === "\u00B0C") return `${Math.round(value)}${unit}`;
+  return formatValue(value, unit);
+}
 
 function formatValue(value, unit) {
   if (value === null || value === undefined) return "N/A";
@@ -39,6 +44,7 @@ export default function HistoryChart({
   domain,
   yAxisWidth,
   seriesName,
+  height = 230,
   emptyMessage = "Insufficient historical data. Continue monitoring to build history.",
 }) {
   const { data, realCount, gapCount, spansDays } = useMemo(() => {
@@ -64,10 +70,10 @@ export default function HistoryChart({
 
   return (
     <>
-      <div style={{ width: "100%", height: CHART_HEIGHT, minWidth: 0 }}>
+      <div style={{ width: "100%", height, minWidth: 0 }}>
         <ResponsiveContainer>
           <LineChart data={data} margin={CHART_MARGIN}>
-            <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" />
+            <CartesianGrid stroke="var(--color-border)" vertical={false} />
             <XAxis
               dataKey="t"
               type="number"
@@ -76,31 +82,41 @@ export default function HistoryChart({
               tickFormatter={tickFormat}
               stroke="var(--color-text-muted)"
               fontSize={11}
+              tickLine={false}
+              axisLine={{ stroke: "var(--color-border-strong)" }}
               minTickGap={56}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={domain}
-              tickFormatter={(v) => formatValue(v, unit)}
+              tickFormatter={(v) => formatTick(v, unit)}
               stroke="var(--color-text-muted)"
               fontSize={11}
+              tickLine={false}
+              axisLine={false}
               width={yAxisWidth}
             />
             <Tooltip
               labelFormatter={(ms) => new Date(ms).toLocaleString()}
               formatter={(v) => [formatValue(v, unit), seriesName]}
+              cursor={{ stroke: "var(--color-border-strong)" }}
               contentStyle={{
-                background: "var(--color-panel)",
-                border: "1px solid var(--color-border)",
+                background: "var(--color-raised)",
+                border: "1px solid var(--color-border-strong)",
+                borderRadius: 4,
+                color: "var(--color-text)",
                 fontSize: "12px",
+                boxShadow: "var(--shadow-pop)",
               }}
+              labelStyle={{ color: "var(--color-text-muted)" }}
             />
             <Line
               type="monotone"
               dataKey="value"
               stroke="var(--color-accent)"
               dot={false}
-              strokeWidth={1.5}
+              activeDot={{ r: 3 }}
+              strokeWidth={1.75}
               connectNulls={false}
               isAnimationActive={false}
             />

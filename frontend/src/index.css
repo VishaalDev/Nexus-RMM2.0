@@ -1,11 +1,14 @@
 @import "./styles/tokens.css";
 @import "./styles/app.css";
+@import "./styles/tables.css";
 
 * {
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -15,10 +18,27 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: var(--text-base);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
   color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+/* Quiet, native-feeling scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }

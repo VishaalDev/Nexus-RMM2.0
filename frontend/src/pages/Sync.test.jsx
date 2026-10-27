@@ -67,10 +67,13 @@ describe("Sync page", () => {
     getSyncStatus.mockResolvedValue(BASE);
     render(<Sync />);
 
-    await screen.findByText("Pending (stored locally, not yet acknowledged)");
-    const pending = screen.getByText("Pending (stored locally, not yet acknowledged)").previousSibling;
-    const synced = screen.getByText("Synchronized (acknowledged by destination)").previousSibling;
-    const failed = screen.getByText("Failed (permanently rejected by destination)").previousSibling;
+    await screen.findByText("Stored locally, not yet acknowledged");
+    const valueOf = (label) => screen.getByText(label, { selector: ".sync-count-label" }).previousSibling;
+    const pending = valueOf("Pending");
+    const synced = valueOf("Synchronized");
+    const failed = valueOf("Failed");
+    expect(screen.getByText("Acknowledged by destination")).toBeInTheDocument();
+    expect(screen.getByText("Permanently rejected by destination")).toBeInTheDocument();
     expect(pending).toHaveTextContent("3");
     expect(synced).toHaveTextContent("120");
     expect(failed).toHaveTextContent("1");

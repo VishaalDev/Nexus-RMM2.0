@@ -126,3 +126,14 @@ With no destination configured the system reports `NOT_CONFIGURED` and keeps
 everything local. Full design, payload/acknowledgement contract, retry and
 idempotency rules and limitations: [`sync.md`](sync.md); API: [`api-sync.md`](api-sync.md);
 schema: `database.md`.
+
+
+## Module 4 — advisor
+
+Reads Module 2's `HealthReport`/`RiskReport` (from one `HealthFacade.analysis()` snapshot,
+so health and risk never come from different moments) and a cached in-memory process
+snapshot, and produces ranked issues with recommendations and an alert log. Wired by
+`AdvisorModuleConfig` exactly like `HealthModuleConfig`; no Module 1–3 bean is modified
+(`HealthFacade` gained one additive method). Process data is never persisted or synced.
+Full design, rules, privacy decisions and limitations: [`advisor.md`](advisor.md);
+API: [`api-advisor.md`](api-advisor.md).

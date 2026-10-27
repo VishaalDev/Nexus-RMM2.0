@@ -5,10 +5,10 @@ import { formatScore } from "../utils/health";
  * score the bar is empty and the number is an em dash - an unassessed
  * component must never look like a zero or a full bar.
  */
-export default function ScoreMeter({ score, label, color }) {
+export default function ScoreMeter({ score, label, color, size = "md" }) {
   const hasScore = score !== null && score !== undefined;
   return (
-    <div className="hl-meter">
+    <div className={`hl-meter hl-meter--${size}`}>
       <div
         className="hl-meter-track"
         role="meter"

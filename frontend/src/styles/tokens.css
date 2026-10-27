@@ -1,23 +1,94 @@
+/*
+ * Design tokens. Every colour, size and space in the UI comes from here.
+ *
+ * Palette logic: a cool neutral ramp for structure, ONE accent (blue) for
+ * interaction and "normal" data, and three status hues (green / amber / red)
+ * that are only ever used when they carry meaning (a state, a severity, a
+ * threshold). Nothing decorative uses a status colour.
+ */
 :root {
-  --color-bg: #17191c;
-  --color-panel: #1d2023;
-  --color-border: #2c3033;
-  --color-text: #d7dadd;
-  --color-text-muted: #8b9096;
-  --color-accent: #4f8dd6;
-  --color-success: #5fae72;
-  --color-warning: #c7953f;
-  --color-critical: #c0564f;
+  color-scheme: dark;
 
-  --font-ui: -apple-system, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  /* Surfaces */
+  --color-bg: #0e1115;
+  --color-surface: #14181d;
+  --color-panel: #14181d; /* legacy alias */
+  --color-raised: #1a1f26;
+  --color-hover: #1e242c;
+  --color-sunken: #0b0e11;
 
+  /* Lines */
+  --color-border: #232a33;
+  --color-border-strong: #2f3843;
+
+  /* Text */
+  --color-text: #e5e8ed;
+  --color-text-2: #b0b8c3;
+  --color-text-muted: #8993a1;
+
+  /* Interaction + data */
+  --color-accent: #5c9cf5;
+  --color-accent-soft: rgba(92, 156, 245, 0.14);
+  --color-on-accent: #07101c;
+  --color-bar: #4e7fb6; /* utilization in the normal range */
+
+  /* Status (meaningful use only) */
+  --color-success: #4eb286;
+  --color-warning: #d6a03a;
+  --color-critical: #e5655e;
+  --tint-warning: rgba(214, 160, 58, 0.1);
+  --tint-critical: rgba(229, 101, 94, 0.1);
+
+  /* Type */
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+  --text-xs: 11.5px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-metric: 24px;
+
+  /* Space (4px grid) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
 
   --radius: 4px;
+  --radius-sm: 3px;
+  --shadow-pop: 0 6px 20px rgba(0, 0, 0, 0.35);
+
+  --sidebar-width: 212px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --color-bg: #f2f4f7;
+    --color-surface: #ffffff;
+    --color-panel: #ffffff;
+    --color-raised: #f7f9fb;
+    --color-hover: #eef1f5;
+    --color-sunken: #e9edf2;
+    --color-border: #dde2e9;
+    --color-border-strong: #c8d0da;
+    --color-text: #1b2128;
+    --color-text-2: #444f5c;
+    --color-text-muted: #5b6674;
+    --color-accent: #1d6fd6;
+    --color-accent-soft: rgba(29, 111, 214, 0.1);
+    --color-on-accent: #ffffff;
+    --color-bar: #4a86c9;
+    --color-success: #1b8559;
+    --color-warning: #9a6606;
+    --color-critical: #c3362e;
+    --tint-warning: rgba(154, 102, 6, 0.09);
+    --tint-critical: rgba(195, 54, 46, 0.08);
+    --shadow-pop: 0 6px 20px rgba(20, 30, 45, 0.15);
+  }
 }

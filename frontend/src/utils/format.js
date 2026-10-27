@@ -93,3 +93,14 @@ export function splitReadingValue(reading) {
       return { number: String(reading.value), unit: reading.unit ?? "" };
   }
 }
+
+/** Compact stamp for logs: time only for today, otherwise "Oct 24, 10:00". */
+export function formatCompactDateTime(iso, nowMs = Date.now()) {
+  if (!iso) return "N/A";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "N/A";
+  const sameDay = date.toDateString() === new Date(nowMs).toDateString();
+  return sameDay
+    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}

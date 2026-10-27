@@ -1,5 +1,6 @@
 import DataBoundary from "../components/DataBoundary";
 import DataTable from "../components/DataTable";
+import PageHeader from "../components/PageHeader";
 import Panel from "../components/Panel";
 import SpecTable from "../components/SpecTable";
 import StatusBadge from "../components/StatusBadge";
@@ -58,14 +59,12 @@ export default function Diagnostics() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h2>Diagnostics</h2>
-        <p>Live application, storage and provider capability status.</p>
-      </header>
+      <PageHeader title="Diagnostics" subtitle="Application, storage and provider capability status." />
 
       <DataBoundary state={diagnostics} what="diagnostics">
         {(data) => (
           <>
+            <div className="grid-2">
             <Panel title="Application">
               <SpecTable
                 caption="Application status"
@@ -81,7 +80,10 @@ export default function Diagnostics() {
               />
             </Panel>
 
-            <Panel title="Provider capability matrix">
+            <EventMonitoringPanel status={data.eventMonitoring} />
+            </div>
+
+            <Panel title="Provider capability matrix" flush>
               <DataTable
                 caption="Hardware provider status"
                 stack
@@ -92,7 +94,6 @@ export default function Diagnostics() {
               />
             </Panel>
 
-            <EventMonitoringPanel status={data.eventMonitoring} />
           </>
         )}
       </DataBoundary>

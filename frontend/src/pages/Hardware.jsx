@@ -1,6 +1,7 @@
 import DataBoundary from "../components/DataBoundary";
 import DataTable from "../components/DataTable";
 import NetworkAdaptersTable from "../components/NetworkAdaptersTable";
+import PageHeader from "../components/PageHeader";
 import Panel from "../components/Panel";
 import SpecTable from "../components/SpecTable";
 import StatusBadge from "../components/StatusBadge";
@@ -52,7 +53,7 @@ function MemoryPanel({ memory }) {
     { key: "manufacturer", header: "Manufacturer", render: (m) => m.manufacturer },
   ];
   return (
-    <Panel title="Memory" actions={`Total: ${formatBytes(memory.totalBytes)}`}>
+    <Panel title="Memory" actions={`Total ${formatBytes(memory.totalBytes)}`} flush>
       <DataTable
         caption="Installed memory modules"
         columns={columns}
@@ -71,7 +72,7 @@ function StorageDevicesPanel({ devices }) {
     { key: "size", header: "Size", align: "right", mono: true, nowrap: true, render: (d) => formatBytes(d.sizeBytes) },
   ];
   return (
-    <Panel title="Storage devices" actions="Live capacity and throughput: see the Storage page">
+    <Panel title="Storage devices" actions={<a className="link-arrow" href="#/storage">Live capacity and throughput</a>} flush>
       <DataTable
         caption="Physical storage devices"
         columns={columns}
@@ -80,7 +81,7 @@ function StorageDevicesPanel({ devices }) {
         emptyMessage="No physical disks were reported by this system."
       />
       {devices.length > 0 && (
-        <p className="note">
+        <p className="panel-foot">
           Inventory only. SMART and NVMe drive-health attributes are not collected by this build, so
           drive health cannot be assessed.
         </p>
@@ -178,22 +179,21 @@ export default function Hardware() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h2>Hardware DNA</h2>
-        <p>Static specifications collected from this machine.</p>
-      </header>
+      <PageHeader title="Hardware" subtitle="Specifications collected from this machine." />
 
       <DataBoundary state={hardware} what="hardware inventory">
         {(data) => (
           <>
-            <CpuPanel cpu={data.cpu} />
+            <div className="grid-2">
+              <CpuPanel cpu={data.cpu} />
+              <GpuPanel gpus={data.gpus} current={current.data ?? []} />
+            </div>
             <MemoryPanel memory={data.memory} />
             <StorageDevicesPanel devices={data.storageDevices} />
-            <GpuPanel gpus={data.gpus} current={current.data ?? []} />
-            <BatteryPanel battery={data.battery} />
-            <Panel title="Network adapters">
+            <Panel title="Network adapters" actions={<a className="link-arrow" href="#/network">Live throughput</a>} flush>
               <NetworkAdaptersTable adapters={data.networkAdapters} />
             </Panel>
+            <BatteryPanel battery={data.battery} />
           </>
         )}
       </DataBoundary>

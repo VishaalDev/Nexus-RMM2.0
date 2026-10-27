@@ -9,7 +9,7 @@ import { METRIC_LABELS, chartConfigFor } from "../utils/metrics";
  * fetch/format wiring exists once. Callers should give it a `key` built
  * from its props so switching selection remounts it with fresh state.
  */
-export default function MetricHistoryChart({ metric, instance = null, range }) {
+export default function MetricHistoryChart({ metric, instance = null, range, tall = false, height }) {
   const state = useMetricHistory(metric, instance, range);
   const config = chartConfigFor(metric);
 
@@ -22,6 +22,7 @@ export default function MetricHistoryChart({ metric, instance = null, range }) {
           domain={config.domain}
           yAxisWidth={config.yAxisWidth}
           seriesName={METRIC_LABELS[metric] ?? metric}
+          height={height ?? (tall ? 340 : 230)}
         />
       )}
     </DataBoundary>

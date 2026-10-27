@@ -1,16 +1,32 @@
 import DataBoundary from "../components/DataBoundary";
 import DataTable from "../components/DataTable";
+import PageHeader from "../components/PageHeader";
 import Panel from "../components/Panel";
 import StatusBadge from "../components/StatusBadge";
 import { useEvents } from "../hooks/useApiData";
 import { formatDateTime } from "../utils/format";
 
+const LEVEL_RANK = { CRITICAL: 0, ERROR: 1, WARNING: 2 };
+
 const COLUMNS = [
-  { key: "time", header: "Time", mono: true, render: (e) => formatDateTime(e.occurredAt) },
-  { key: "level", header: "Level", render: (e) => <StatusBadge status={e.level?.toUpperCase()} label={e.level} /> },
-  { key: "category", header: "Category", render: (e) => e.category },
-  { key: "provider", header: "Provider", mono: true, render: (e) => e.providerName },
-  { key: "message", header: "Message", render: (e) => e.message },
+  {
+    key: "time",
+    header: "Time",
+    nowrap: true,
+    sortValue: (e) => Date.parse(e.occurredAt) || null,
+    render: (e) => <span className="num">{formatDateTime(e.occurredAt)}</span>,
+  },
+  {
+    key: "level",
+    header: "Level",
+    nowrap: true,
+    sortValue: (e) => LEVEL_RANK[e.level?.toUpperCase()] ?? 9,
+    sortFirst: "asc",
+    render: (e) => <StatusBadge status={e.level?.toUpperCase()} label={e.level} />,
+  },
+  { key: "category", header: "Category", sortValue: (e) => e.category, render: (e) => e.category },
+  { key: "provider", header: "Provider", mono: true, wrap: "anywhere", sortValue: (e) => e.providerName, render: (e) => e.providerName },
+  { key: "message", header: "Message", wrap: "words", minWidth: "20rem", render: (e) => e.message },
 ];
 
 export default function Events() {
@@ -18,29 +34,24 @@ export default function Events() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h2>Events</h2>
-        <p>
-          Critical and error entries from the Windows System log, limited to hardware-relevant
-          providers (WHEA, disk, power, PnP). Routine activity is not shown here.
-        </p>
-      </header>
+      <PageHeader
+        title="Events"
+        subtitle="Critical and error entries from the Windows System log, limited to hardware-relevant providers (WHEA, disk, power, PnP)."
+        meta={events.data ? <span>{events.data.length} shown &middot; every 30 s</span> : null}
+      />
 
-      <Panel title="Recent hardware/system events" actions="Refreshes every 30 seconds">
+      <Panel title="Hardware and system events" flush>
         <DataBoundary state={events} what="events">
-          {(data) =>
-            data.length === 0 ? (
-              <p className="state">No matching hardware/system events detected.</p>
-            ) : (
-              <DataTable
-                caption="Hardware and system events"
-                columns={COLUMNS}
-                rows={data}
-                getRowKey={(e) => `${e.providerName}|${e.recordId}`}
-                emptyMessage="No matching hardware/system events detected."
-              />
-            )
-          }
+          {(data) => (
+            <DataTable
+              caption="Hardware and system events"
+              columns={COLUMNS}
+              rows={data}
+              getRowKey={(e) => `${e.providerName}|${e.recordId}`}
+              defaultSort={{ key: "time", dir: "desc" }}
+              emptyMessage="No matching hardware/system events detected."
+            />
+          )}
         </DataBoundary>
       </Panel>
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import Overview from "./Overview";
 
 vi.mock("../api/services/deviceService", () => ({
@@ -72,7 +72,9 @@ describe("Overview page", () => {
     await waitFor(() => expect(screen.getAllByText("TEST-HOST").length).toBeGreaterThan(0));
     expect(screen.getByText("abc-123")).toBeInTheDocument();
     expect(screen.getByText("22631")).toBeInTheDocument(); // OS build, only in the hardware endpoint
-    await waitFor(() => expect(screen.getByText(/37\.4/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/37\.4/).length).toBeGreaterThan(0));
+    // The headline tile and the sensor table both read the same real value.
+    expect(within(screen.getByRole("group", { name: "CPU" })).getByText("37.4")).toBeInTheDocument();
     expect(screen.getByText(/Insufficient historical data/i)).toBeInTheDocument();
   });
 
@@ -96,8 +98,12 @@ describe("Overview page", () => {
     render(<Overview />);
 
     await waitFor(() =>
-      expect(screen.getByText(/Establishing CPU load baseline/i)).toBeInTheDocument(),
+      expect(screen.getAllByText(/Establishing CPU load baseline/i).length).toBeGreaterThan(0),
     );
+    // The CPU tile shows a dash and the reason, never a number or a bar.
+    const tile = screen.getByRole("group", { name: "CPU" });
+    expect(within(tile).getByText("\u2014")).toBeInTheDocument();
+    expect(within(tile).queryByRole("meter")).not.toBeInTheDocument();
     // Must never render a fabricated percentage when unavailable.
     expect(screen.queryByText(/^\d+\.\d%$/)).not.toBeInTheDocument();
   });

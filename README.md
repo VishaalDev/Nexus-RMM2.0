@@ -3,10 +3,11 @@
 **A Lightweight Monitoring System with Offline Data Synchronization**
 
 > Status: **Modules 1 (hardware monitoring), 2 (health analysis & failure
-> risk) and 3 (offline-first synchronization) are implemented.** Issue
-> engine / alerts / recommendations remain future work. Module 3 adds a
-> durable sync queue, a configurable sync client and a Sync page; see
-> [`docs/sync.md`](docs/sync.md).
+> risk), 3 (offline-first synchronization) and 4 (advisor: process insight,
+> prioritized issues, recommendations, alerts) are implemented.** Module 4 is
+> what turns the measurements into decisions: it names what is using your
+> CPU and memory, ranks what needs attention and says what to do about it.
+> See [`docs/advisor.md`](docs/advisor.md).
 
 ## What's real right now
 
@@ -35,12 +36,28 @@ an `ERROR` sample before storage, never persisted as real), and **bounded
 history queries** (30-day window ceiling, 5000-point cap regardless of
 window size).
 
+## Module 4 — Advisor (new)
+
+- **Processes**: per-application CPU and memory (all of a browser's processes
+  grouped as one row), with a plain-language "what is this" for well-known
+  programs. Program names only: command lines, user names and paths are never
+  read, and nothing is stored or synchronized.
+- **Advisor**: ranked issues, each with the evidence, and concrete manual
+  steps. It correlates signals (e.g. "CPU is overloaded **and** chrome.exe is
+  62% of it"; "heat with low CPU load points at cooling, not workload"),
+  reports a missing sensor as *cannot assess* rather than healthy, and never
+  changes anything on your computer.
+- **Alerts**: NEW / ESCALATED / RESOLVED log with flap control, a sidebar
+  badge and an Overview "Needs attention" panel.
+
 ## What's not built yet
 
-- Issue engine, alerts and recommendations
+- Desktop/e-mail notification delivery and persisted issue history (the alert
+  log is in memory; see `docs/advisor.md`)
+- Per-process disk/network attribution
 - A built-in remote destination: Module 3 synchronizes to a receiver *you*
   provide (contract in `docs/sync.md`); none is bundled or faked
-- Frontend pages for Issues, Alerts, Reports and Settings
+- Frontend pages for Reports and Settings
 - SMART/NVMe storage health, GPU real-time counters (vendor SDK), PawnIO
   MSR register execution, per-core CPU temperature — see
   `docs/hardware-monitoring.md` for exactly why each of these is out of
@@ -66,21 +83,20 @@ explanation: `docs/database.md`.
 
 ```
 Nexus-RMM-Final/
-├── backend/     Spring Boot (Java 17), SQLite, 8 OSHI-based providers + event monitor, sync engine
+├── backend/     Spring Boot (Java 17), SQLite, 8 OSHI-based providers + event monitor, health/risk engines, sync engine, advisor
 ├── tools/       sync-test-receiver.mjs — optional dev-only receiver for trying sync locally
-├── frontend/    React + Vite, Recharts (Overview page only so far)
+├── frontend/    React + Vite, Recharts (Overview, Advisor, Processes, Health, Risk, Storage, Hardware, Network, History, Events, Sync, Diagnostics)
 └── docs/
     ├── architecture.md          system-wide design, updated each phase
-    └── hardware-monitoring.md   Module 1 detail + itemized known limitations
+    ├── hardware-monitoring.md   Module 1 detail + itemized known limitations
+    └── advisor.md               Module 4 design, rules, privacy, limitations
 ```
 
 ## Running it
 
 ### Backend
 
-Requires JDK 17+ and Maven, with normal internet access to Maven Central
-(this was written in a sandbox that cannot reach Maven Central — it has
-**not been compiled** here; see `docs/hardware-monitoring.md`).
+Requires JDK 17+ and Maven with access to Maven Central.
 
 ```bash
 cd backend
@@ -88,7 +104,10 @@ mvn clean package
 mvn spring-boot:run
 ```
 
-The API listens on `http://localhost:8080`. On first run it creates
+The API listens on `http://localhost:8080` and, **by default, only on the
+loopback interface** (it has no authentication and now exposes program
+names). Set `NEXUS_SERVER_ADDRESS=0.0.0.0` only if you deliberately want other
+devices to reach it. On first run it creates
 `backend/data/nexus-rmm.db` and a `Computer` identity row from your real
 system information.
 
@@ -100,10 +119,8 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. Still just the Overview page (CPU only) from
-the vertical slice — it hasn't been updated to show the new Module 1
-metrics yet. `npm run build`, `npm run lint`, and `npm run test` all
-actually passed in this environment.
+Open `http://localhost:5173`. Start with **Advisor** (what needs attention and
+what to do) and **Processes** (what is using the machine right now).
 
 ## API (current)
 
@@ -120,6 +137,8 @@ actually passed in this environment.
 | POST | `/api/sync/trigger` | Module 3: "Sync Now" — starts a background run (202), or 409 if running / not configured |
 
 Module 2 endpoints (`/api/health/*`, `/api/risk*`) are in `docs/api-health.md`.
+Module 4 endpoints (`/api/advisor`, `/api/advisor/alerts`, `/api/processes`) are in
+`docs/api-advisor.md`.
 
 ## Offline synchronization (Module 3)
 
@@ -139,31 +158,25 @@ id; failures keep data queued and are retried with bounded exponential backoff;
 retries are idempotent (stable record ids). **Locally stored ≠ synchronized.**
 No-destination try-out: `node tools\sync-test-receiver.mjs` (development aid only).
 
-## Testing done so far
+## Testing
 
-> Module 3: limitations are in `docs/sync.md`. Run `mvn clean test` in `backend/`
-> and `npm run test` in `frontend/` for current results on your machine; the notes
-> below describe the earlier milestone.
+```bash
+cd backend  && mvn clean test     # JUnit 5
+cd frontend && npm run lint && npm run test && npm run build
+```
 
+Last verified state of this tree:
 
-- **Frontend**: real `npm install`, `npm run build`, `npm run lint`
-  (oxlint), `npm run test` (Vitest, 3/3 passing).
-- **Backend**: 17 JUnit tests written — CPU baseline behavior (3), RAM
-  immediate value (1), data-validation cases (4), and, for the
-  CHECK-constraint incident specifically: `SchemaMigratorTest` (5 tests
-  that reproduce the exact legacy schema and prove the migration repairs
-  it without data loss) and `MetricSampleRepositoryTest` (4 tests: a fresh
-  schema has no CHECK constraint at all, verified against the actual
-  generated DDL — not the annotation; every one of the 11 `MetricType`
-  values and 6 `AvailabilityStatus` values persists and reads back; and a
-  metric_type value with no corresponding Java enum constant yet can still
-  be written at the database layer, proving future enum growth needs no
-  schema migration). **Not yet compiled** — confirmed Maven Central
-  returns 403 from this sandbox. Structural checks done instead:
-  brace/paren balance verified across every file, every provider confirmed
-  to implement the full `MetricProvider` interface. The real compiler run
-  — `mvn clean package`
-  — is the next step, on your machine.
-"# Nexus-RMM2.0" 
-#   N e x u s - R M M 2 . 0  
- 
+- **Frontend** (real run): `npm run lint` 0 warnings, `npm run test` 100/100
+  passing, `npm run build` succeeds.
+- **Backend, Modules 1-3**: 214/214 tests passed on the project owner's machine
+  before Module 4 was added (surefire reports).
+- **Backend, Module 4**: 67 new JUnit tests (engine rules, correlation, alert
+  lifecycle, facade, settings, process aggregation and sampler). They were run
+  against the framework-free classes with `javac` and a minimal JUnit stand-in
+  (together with the existing 99 Module 2 analysis/risk tests: 166/166), because
+  Maven Central was unreachable where Module 4 was written. The Spring/OSHI
+  wiring (`OshiProcessSource`, `AdvisorModuleConfig`, `AdvisorController`, the
+  `@Scheduled` beans) was type-checked against stubs only. **Run `mvn clean
+  test` and start the backend once** to confirm that part on a real OSHI/Spring
+  classpath.

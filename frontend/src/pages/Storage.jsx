@@ -1,7 +1,9 @@
 import DataBoundary from "../components/DataBoundary";
 import DataTable from "../components/DataTable";
+import PageHeader from "../components/PageHeader";
 import Panel from "../components/Panel";
 import RateCell from "../components/RateCell";
+import StatStrip from "../components/StatStrip";
 import StatusBadge from "../components/StatusBadge";
 import UtilizationBar from "../components/UtilizationBar";
 import { useCurrentMetrics, useHardwareSnapshot } from "../hooks/useApiData";
@@ -22,15 +24,16 @@ function volumeRow(volume, utilizationReadings) {
 }
 
 const VOLUME_COLUMNS = [
-  { key: "drive", header: "Drive", mono: true, nowrap: true, render: (r) => r.volume.mount },
-  { key: "label", header: "Name", wrap: "words", minWidth: "9rem", render: (r) => r.volume.name },
+  { key: "drive", header: "Drive", mono: true, nowrap: true, sortValue: (r) => r.volume.mount, render: (r) => r.volume.mount },
+  { key: "label", header: "Name", wrap: "words", minWidth: "9rem", sortValue: (r) => r.volume.name, render: (r) => r.volume.name },
   { key: "fs", header: "File system", nowrap: true, render: (r) => r.volume.fileSystemType },
-  { key: "total", header: "Total", align: "right", mono: true, nowrap: true, render: (r) => formatBytes(r.volume.totalBytes) },
-  { key: "free", header: "Free", align: "right", mono: true, nowrap: true, render: (r) => formatBytes(r.volume.usableBytes) },
-  { key: "used", header: "Used", align: "right", mono: true, nowrap: true, render: (r) => formatBytes(r.usedBytes) },
+  { key: "total", header: "Total", align: "right", mono: true, nowrap: true, sortValue: (r) => r.volume.totalBytes, render: (r) => formatBytes(r.volume.totalBytes) },
+  { key: "free", header: "Free", align: "right", mono: true, nowrap: true, sortValue: (r) => r.volume.usableBytes, render: (r) => formatBytes(r.volume.usableBytes) },
+  { key: "used", header: "Used", align: "right", mono: true, nowrap: true, sortValue: (r) => r.usedBytes, render: (r) => formatBytes(r.usedBytes) },
   {
     key: "util",
     header: "Utilization",
+    sortValue: (r) => r.percent,
     render: (r) =>
       r.percent === null ? (
         <span className="muted">N/A</span>
@@ -56,16 +59,34 @@ function VolumesPanel({ volumes, current }) {
   const readings = readingsOfType(current, "STORAGE_UTILIZATION");
   const rows = volumes.map((v) => volumeRow(v, readings)).sort((a, b) => a.volume.mount.localeCompare(b.volume.mount));
   const highCount = rows.filter((r) => r.level === "high").length;
+  const totalBytes = rows.reduce((sum, r) => sum + r.volume.totalBytes, 0);
+  const usedBytes = rows.reduce((sum, r) => sum + r.usedBytes, 0);
+  const fullest = rows.filter((r) => r.percent !== null).sort((a, b) => b.percent - a.percent)[0];
 
   return (
     <>
       {rows.length > 0 && (
-        <p className="note" style={{ marginTop: 0, marginBottom: "var(--space-3)" }}>
-          {rows.length} volume{rows.length === 1 ? "" : "s"} detected.{" "}
-          {highCount > 0
-            ? `${highCount} ${highCount === 1 ? "is" : "are"} at high utilization (${USAGE_THRESHOLDS.high}% or more).`
-            : `None are at high utilization (${USAGE_THRESHOLDS.high}% or more).`}
-        </p>
+        <StatStrip
+          flat
+          label="Storage summary"
+          items={[
+            { label: "Volumes", value: rows.length },
+            {
+              label: "Used of total",
+              value: `${formatBytes(usedBytes)} of ${formatBytes(totalBytes)}`,
+              sub: totalBytes > 0 ? `${((usedBytes / totalBytes) * 100).toFixed(1)}% across all volumes` : undefined,
+            },
+            {
+              label: "Fullest volume",
+              value: fullest ? `${fullest.percent.toFixed(1)}%` : "N/A",
+              sub: fullest?.volume.mount,
+            },
+            {
+              label: `At high utilization (${USAGE_THRESHOLDS.high}%+)`,
+              value: `${highCount} of ${rows.length}`,
+            },
+          ]}
+        />
       )}
       <DataTable
         caption="Storage volumes"
@@ -73,6 +94,7 @@ function VolumesPanel({ volumes, current }) {
         columns={VOLUME_COLUMNS}
         rows={rows}
         getRowKey={(r) => `${r.volume.mount}|${r.volume.name}`}
+        defaultSort={{ key: "drive", dir: "asc" }}
         emptyMessage="No volumes with a reported capacity were detected."
       />
     </>
@@ -84,9 +106,9 @@ function DisksPanel({ devices, current }) {
   const writes = readingsOfType(current, "STORAGE_WRITE_BYTES_PER_SEC");
 
   const columns = [
-    { key: "name", header: "Device", mono: true, wrap: "anywhere", minWidth: "10rem", render: (d) => d.name },
+    { key: "name", header: "Device", mono: true, wrap: "anywhere", minWidth: "10rem", sortValue: (d) => d.name, render: (d) => d.name },
     { key: "model", header: "Model", wrap: "words", minWidth: "9rem", render: (d) => d.model },
-    { key: "size", header: "Size", align: "right", mono: true, nowrap: true, render: (d) => formatBytes(d.sizeBytes) },
+    { key: "size", header: "Size", align: "right", mono: true, nowrap: true, sortValue: (d) => d.sizeBytes, render: (d) => formatBytes(d.sizeBytes) },
     {
       key: "smart",
       header: "SMART health",
@@ -123,7 +145,7 @@ function DisksPanel({ devices, current }) {
         emptyMessage="No physical disks were reported by this system."
       />
       {devices.length > 0 && (
-        <p className="note">
+        <p className="panel-foot">
           SMART and NVMe health attributes are not collected by this build, so drive health
           cannot be assessed here.
         </p>
@@ -138,10 +160,11 @@ export default function Storage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h2>Storage</h2>
-        <p>Capacity per volume and live throughput per physical disk.</p>
-      </header>
+      <PageHeader
+        title="Storage"
+        subtitle="Capacity per volume and live throughput per physical disk."
+        meta={<span>Utilization every 10 s</span>}
+      />
 
       {current.error && current.data && (
         <p className="state state-warning" role="alert">
@@ -149,13 +172,13 @@ export default function Storage() {
         </p>
       )}
 
-      <Panel title="Volumes">
+      <Panel title="Volumes" flush>
         <DataBoundary state={hardware} what="storage volumes">
           {(data) => <VolumesPanel volumes={data.volumes} current={current.data ?? []} />}
         </DataBoundary>
       </Panel>
 
-      <Panel title="Physical disks">
+      <Panel title="Physical disks" flush>
         <DataBoundary state={hardware} what="physical disks">
           {(data) => <DisksPanel devices={data.storageDevices} current={current.data ?? []} />}
         </DataBoundary>

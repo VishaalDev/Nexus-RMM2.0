@@ -1,5 +1,9 @@
 server:
   port: 8080
+  # Loopback only by default: the API exposes system telemetry and (Module 4) the names of running
+  # programs, and it has no authentication. Set NEXUS_SERVER_ADDRESS=0.0.0.0 only if you
+  # deliberately want other devices on your network to reach it.
+  address: ${NEXUS_SERVER_ADDRESS:127.0.0.1}
 
 spring:
   application:
@@ -128,6 +132,22 @@ nexus:
     enqueue-chunk-size: 5000        # rows copied into the queue per short write transaction
     poll-interval-seconds: 10       # how often an automatic attempt is considered
     backfill-existing-data: true    # also synchronize telemetry stored before Module 3 existed
+
+  # Module 4 (advisor: process insight, prioritized issues, recommendations, alert log).
+  # Read-only: it never changes anything on the computer. Details: docs/advisor.md
+  advisor:
+    process-sampling-enabled: true  # per-application CPU/RAM; false = no program is ever named
+    process-interval-seconds: 30    # 5-3600; how often the process table is read
+    evaluation-interval-seconds: 60 # 10-3600; background evaluation that keeps the alert log current
+    process-top-n: 8                # applications kept per ranking
+    min-blame-cpu-percent: 5.0      # a program is named as a CPU contributor only above this share of the whole CPU
+    min-blame-memory-percent: 5.0   # same, for RAM
+    dominant-share: 0.5             # "most of what is in use" when a program holds at least this fraction
+    long-uptime-days: 14            # suggest a restart alongside memory pressure from this uptime
+    resolve-after-absent: 2         # consecutive evaluations an issue must be gone before it counts as resolved
+    max-alert-events: 200           # size of the in-memory alert log
+    top-actions: 3                  # "do this first" items in a report
+    cache-ttl-seconds: 10           # a report is reused for this long
 
 logging:
   level:

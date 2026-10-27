@@ -105,7 +105,7 @@ export default function NetworkAdaptersTable({ adapters, current }) {
         getRowKey={(row) => row.key}
         emptyMessage="No network adapters were reported by this system."
       />
-      {unlabeledNote && <p className="note">{unlabeledNote}</p>}
+      {unlabeledNote && <p className="panel-foot">{unlabeledNote}</p>}
     </>
   );
 }

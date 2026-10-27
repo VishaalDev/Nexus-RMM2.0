@@ -56,6 +56,15 @@ public class HealthFacade {
         return cached;
     }
 
+    /** Health and risk from one snapshot, for consumers (the advisor) that must not mix two moments. */
+    public record Analysis(HealthReport health, RiskReport risk) {
+    }
+
+    public Analysis analysis() {
+        Snapshot s = snapshot();
+        return new Analysis(s.health(), s.risk());
+    }
+
     public HealthReport healthReport() {
         return snapshot().health();
     }

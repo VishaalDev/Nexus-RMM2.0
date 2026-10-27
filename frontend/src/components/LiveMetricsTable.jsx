@@ -45,11 +45,15 @@ function StatusCell({ row }) {
 }
 
 const COLUMNS = [
-  { key: "metric", header: "Metric", render: (row) => METRIC_LABELS[row.type] },
   {
-    key: "instance",
-    header: "Instance",
-    render: (row) => row.instance ?? <span className="muted">&mdash;</span>,
+    key: "metric",
+    header: "Sensor",
+    render: (row) => (
+      <span>
+        {METRIC_LABELS[row.type]}
+        {row.instance && <span className="muted mono"> {row.instance}</span>}
+      </span>
+    ),
   },
   { key: "value", header: "Value", render: (row) => <ValueCell row={row} /> },
   { key: "status", header: "Status", render: (row) => <StatusCell row={row} /> },
@@ -61,8 +65,9 @@ const COLUMNS = [
   {
     key: "updated",
     header: "Updated",
-    mono: true,
-    render: (row) => (row.reading ? formatTime(row.reading.timestamp) : "\u2014"),
+    align: "right",
+    nowrap: true,
+    render: (row) => <span className="muted">{row.reading ? formatTime(row.reading.timestamp) : "\u2014"}</span>,
   },
 ];
 

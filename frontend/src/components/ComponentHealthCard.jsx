@@ -5,8 +5,8 @@ import { STATUS_META, formatPercent } from "../utils/health";
 
 /**
  * One component's health. A NO_DATA component shows WHY it could not be
- * assessed (the backend's own reason) instead of any score, and its
- * `basis` line states exactly what the number is - and is not - based on.
+ * assessed (the backend's own reason) instead of any score; its `basis`
+ * (what the number is and is not based on) is one click away.
  */
 export default function ComponentHealthCard({ component }) {
   const { label, score, status, basis, dataCoverage, findings, instances, noDataReason, weight } = component;
@@ -42,18 +42,21 @@ export default function ComponentHealthCard({ component }) {
           {scoredInstances.map((i) => (
             <li key={i.instance}>
               <span className="mono">{i.instance}</span>
-              <span>{i.score}</span>
+              <span className="num">{i.score}</span>
             </li>
           ))}
         </ul>
       )}
       {!noData && unscoredInstances.length > 0 && (
-        <p className="muted hl-coverage">
-          Not assessed: {unscoredInstances.map((i) => i.instance).join(", ")}
-        </p>
+        <p className="muted hl-coverage">Not assessed: {unscoredInstances.map((i) => i.instance).join(", ")}</p>
       )}
 
-      <p className="muted hl-basis">{basis}</p>
+      {basis && (
+        <details className="disclosure hl-basis">
+          <summary>Basis</summary>
+          <p className="muted">{basis}</p>
+        </details>
+      )}
     </article>
   );
 }
